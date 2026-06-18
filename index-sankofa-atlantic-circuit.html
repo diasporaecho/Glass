@@ -1,0 +1,1838 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Diaspora Echo heritage-travel showcase for Sankofa Atlantic Circuit: Morocco, Cabo Verde and Spain." />
+  <meta name="theme-color" content="#06111f" />
+  <title>Sankofa Atlantic Circuit | Diaspora Echo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfQ6xzBzwQfDI9rKkYCvpmY+uGNF1pY=" crossorigin="" />
+  <style>
+    :root {
+      --bg: #06111f;
+      --bg-2: #0b1c32;
+      --ink: #f7fbff;
+      --muted: #c8d6e4;
+      --soft: rgba(255, 255, 255, 0.12);
+      --softer: rgba(255, 255, 255, 0.07);
+      --line: rgba(255, 255, 255, 0.24);
+      --line-strong: rgba(255, 255, 255, 0.38);
+      --gold: #f6c85f;
+      --gold-2: #ffdf8a;
+      --cyan: #22d3ee;
+      --cyan-2: #8ff6ff;
+      --coral: #ff7a90;
+      --terracotta: #de8a55;
+      --shadow: 0 24px 90px rgba(0, 0, 0, 0.38);
+      --radius-lg: 32px;
+      --radius-md: 24px;
+      --radius-sm: 16px;
+      --max: 1180px;
+      --nav-h: 76px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: calc(var(--nav-h) + 28px);
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "Manrope", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 10% 10%, rgba(34, 211, 238, 0.34), transparent 28rem),
+        radial-gradient(circle at 83% 6%, rgba(246, 200, 95, 0.28), transparent 24rem),
+        radial-gradient(circle at 80% 60%, rgba(255, 122, 144, 0.18), transparent 26rem),
+        linear-gradient(135deg, #06111f 0%, #0d2744 48%, #05101c 100%);
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      z-index: -3;
+      border-radius: 999px;
+      filter: blur(18px);
+      opacity: 0.75;
+      pointer-events: none;
+      transform: translateZ(0);
+    }
+
+    body::before {
+      width: 34vw;
+      height: 34vw;
+      min-width: 340px;
+      min-height: 340px;
+      left: -8vw;
+      top: 18vh;
+      background: radial-gradient(circle, rgba(34, 211, 238, 0.26), transparent 64%);
+    }
+
+    body::after {
+      width: 42vw;
+      height: 42vw;
+      min-width: 420px;
+      min-height: 420px;
+      right: -12vw;
+      bottom: 3vh;
+      background: radial-gradient(circle, rgba(246, 200, 95, 0.22), transparent 62%);
+    }
+
+    a { color: inherit; }
+
+    img, svg { display: block; }
+
+
+    /* Critical Leaflet layout fallback: keeps tiles, markers and the route line positioned correctly if the CDN CSS loads late on mobile browsers. */
+    .leaflet-container {
+      position: relative;
+      overflow: hidden;
+      background: #dce5e9;
+      font: 12px/1.5 "Helvetica Neue", Arial, Helvetica, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .leaflet-container,
+    .leaflet-container * {
+      box-sizing: content-box;
+    }
+
+    .leaflet-pane,
+    .leaflet-tile,
+    .leaflet-marker-icon,
+    .leaflet-marker-shadow,
+    .leaflet-tile-container,
+    .leaflet-pane > svg,
+    .leaflet-pane > canvas,
+    .leaflet-zoom-box,
+    .leaflet-image-layer,
+    .leaflet-layer {
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+
+    .leaflet-container .leaflet-overlay-pane svg,
+    .leaflet-container .leaflet-marker-pane img,
+    .leaflet-container .leaflet-shadow-pane img,
+    .leaflet-container .leaflet-tile-pane img,
+    .leaflet-container img.leaflet-image-layer,
+    .leaflet-container .leaflet-tile {
+      max-width: none !important;
+      max-height: none !important;
+    }
+
+    .leaflet-tile,
+    .leaflet-marker-icon,
+    .leaflet-marker-shadow {
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    .leaflet-tile {
+      width: 256px;
+      height: 256px;
+      border: 0;
+      filter: inherit;
+      visibility: hidden;
+    }
+
+    .leaflet-tile-loaded { visibility: inherit; }
+    .leaflet-pane { z-index: 400; }
+    .leaflet-tile-pane { z-index: 200; }
+    .leaflet-overlay-pane { z-index: 400; }
+    .leaflet-shadow-pane { z-index: 500; }
+    .leaflet-marker-pane { z-index: 600; }
+    .leaflet-tooltip-pane { z-index: 650; }
+    .leaflet-popup-pane { z-index: 700; }
+    .leaflet-map-pane canvas { z-index: 100; }
+    .leaflet-map-pane svg { z-index: 200; }
+    .leaflet-zoom-animated { transform-origin: 0 0; }
+    .leaflet-interactive { cursor: pointer; }
+
+    .leaflet-control {
+      position: relative;
+      z-index: 800;
+      pointer-events: auto;
+      float: left;
+      clear: both;
+    }
+
+    .leaflet-top,
+    .leaflet-bottom {
+      position: absolute;
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    .leaflet-top { top: 0; }
+    .leaflet-right { right: 0; }
+    .leaflet-bottom { bottom: 0; }
+    .leaflet-left { left: 0; }
+    .leaflet-right .leaflet-control { float: right; }
+    .leaflet-top .leaflet-control { margin-top: 10px; }
+    .leaflet-bottom .leaflet-control { margin-bottom: 10px; }
+    .leaflet-left .leaflet-control { margin-left: 10px; }
+    .leaflet-right .leaflet-control { margin-right: 10px; }
+
+    .leaflet-control-zoom {
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,.22);
+    }
+
+    .leaflet-control-zoom a {
+      display: block;
+      width: 30px;
+      height: 30px;
+      text-align: center;
+      text-decoration: none;
+      line-height: 30px;
+      font-weight: 800;
+      color: #05101c;
+      background: rgba(255,255,255,.92);
+      border-bottom: 1px solid rgba(0,0,0,.12);
+    }
+
+    .leaflet-control-zoom a:last-child { border-bottom: 0; }
+    .leaflet-control-attribution { background: rgba(255,255,255,.78); padding: 0 5px; }
+
+    .leaflet-popup {
+      position: absolute;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .leaflet-popup-content-wrapper {
+      padding: 1px;
+      text-align: left;
+      border-radius: 12px;
+    }
+
+    .leaflet-popup-content {
+      margin: 13px 19px;
+      min-width: 1px;
+    }
+
+    .leaflet-popup-tip-container {
+      width: 40px;
+      height: 20px;
+      position: absolute;
+      left: 50%;
+      margin-left: -20px;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .leaflet-popup-tip {
+      width: 17px;
+      height: 17px;
+      padding: 1px;
+      margin: -10px auto 0;
+      transform: rotate(45deg);
+    }
+
+    .leaflet-container a.leaflet-popup-close-button {
+      position: absolute;
+      top: 0;
+      right: 0;
+      border: none;
+      text-align: center;
+      width: 24px;
+      height: 24px;
+      font: 16px/24px Tahoma, Verdana, sans-serif;
+      color: #cbd5e1;
+      text-decoration: none;
+      background: transparent;
+    }
+
+    .skip-link {
+      position: fixed;
+      left: 1rem;
+      top: 1rem;
+      z-index: 9999;
+      padding: 0.7rem 1rem;
+      border-radius: 999px;
+      background: #ffffff;
+      color: #05101c;
+      transform: translateY(-160%);
+      transition: transform .2s ease;
+    }
+
+    .skip-link:focus { transform: translateY(0); }
+
+    .progress {
+      position: fixed;
+      inset: 0 0 auto 0;
+      height: 3px;
+      z-index: 999;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .progress span {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, var(--gold), var(--cyan));
+      box-shadow: 0 0 18px rgba(34, 211, 238, 0.55);
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 900;
+      min-height: var(--nav-h);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      background: rgba(5, 16, 28, 0.34);
+      border-bottom: 1px solid transparent;
+      transition: background .25s ease, border-color .25s ease, box-shadow .25s ease;
+    }
+
+    .topbar.is-solid {
+      background: rgba(5, 16, 28, 0.84);
+      border-color: rgba(255, 255, 255, 0.14);
+      box-shadow: 0 16px 50px rgba(0, 0, 0, 0.28);
+    }
+
+    .nav-inner {
+      width: min(var(--max), calc(100% - 28px));
+      min-height: var(--nav-h);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: .8rem;
+      text-decoration: none;
+      min-width: max-content;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(246, 200, 95, 0.55);
+      border-radius: 16px;
+      background: linear-gradient(145deg, rgba(246, 200, 95, 0.18), rgba(255,255,255,0.07));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 10px 34px rgba(246, 200, 95, 0.16);
+    }
+
+    .brand-mark svg {
+      width: 30px;
+      height: 30px;
+      fill: none;
+      stroke: var(--gold-2);
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .brand-copy strong {
+      display: block;
+      font-family: "Outfit", sans-serif;
+      font-size: 1rem;
+      line-height: 1;
+      letter-spacing: .01em;
+    }
+
+    .brand-copy span {
+      display: block;
+      margin-top: .25rem;
+      color: var(--muted);
+      font-size: .72rem;
+      line-height: 1;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: .35rem;
+      padding: .35rem;
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.07);
+      overflow-x: auto;
+      scrollbar-width: none;
+      max-width: 100%;
+    }
+
+    .nav-links::-webkit-scrollbar { display: none; }
+
+    .nav-links a {
+      text-decoration: none;
+      color: rgba(247, 251, 255, 0.82);
+      font-weight: 800;
+      font-size: .83rem;
+      letter-spacing: .02em;
+      padding: .65rem .85rem;
+      border-radius: 999px;
+      transition: color .2s ease, background .2s ease, transform .2s ease;
+      white-space: nowrap;
+    }
+
+    .nav-links a:hover,
+    .nav-links a:focus-visible {
+      color: #05101c;
+      background: linear-gradient(135deg, var(--gold), var(--cyan));
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+    main { position: relative; }
+
+    .section {
+      width: min(var(--max), calc(100% - 28px));
+      margin: 0 auto;
+      padding: 76px 0;
+    }
+
+    .hero {
+      min-height: calc(100svh - var(--nav-h));
+      display: grid;
+      align-items: center;
+      padding-top: 42px;
+      position: relative;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr);
+      gap: 2rem;
+      align-items: stretch;
+    }
+
+    .glass {
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: linear-gradient(145deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06));
+      box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.2);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border-radius: var(--radius-lg);
+    }
+
+    .hero-panel {
+      position: relative;
+      overflow: hidden;
+      padding: clamp(1.4rem, 4vw, 3rem);
+    }
+
+    .hero-panel::before {
+      content: "";
+      position: absolute;
+      inset: -30% -20% auto auto;
+      width: 420px;
+      height: 420px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(34,211,238,.24), transparent 64%);
+      pointer-events: none;
+    }
+
+    .kicker,
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      color: var(--cyan-2);
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      font-weight: 900;
+      font-size: .76rem;
+    }
+
+    .kicker::before,
+    .eyebrow::before {
+      content: "";
+      width: 2.1rem;
+      height: 1px;
+      background: linear-gradient(90deg, var(--gold), var(--cyan));
+    }
+
+    h1, h2, h3 {
+      font-family: "Outfit", sans-serif;
+      margin: 0;
+      line-height: .98;
+      letter-spacing: -0.04em;
+    }
+
+    h1 {
+      max-width: 920px;
+      margin-top: 1rem;
+      font-size: clamp(3.25rem, 10vw, 8rem);
+    }
+
+    .gradient-text {
+      background: linear-gradient(110deg, #fff 5%, var(--gold-2) 36%, var(--cyan-2) 72%, #fff 96%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 14px 50px rgba(34, 211, 238, 0.15);
+    }
+
+    .hero-tagline {
+      max-width: 820px;
+      margin: 1.2rem 0 0;
+      color: rgba(247, 251, 255, .9);
+      font-size: clamp(1.15rem, 2.1vw, 1.65rem);
+      line-height: 1.45;
+      font-weight: 600;
+    }
+
+    .route-line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .7rem;
+      margin-top: 1.55rem;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: .45rem;
+      padding: .62rem .82rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.08);
+      color: rgba(247,251,255,.88);
+      font-size: .9rem;
+      font-weight: 800;
+    }
+
+    .chip svg { width: 16px; height: 16px; color: var(--gold); }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .85rem;
+      margin-top: 1.9rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .55rem;
+      min-height: 48px;
+      padding: .9rem 1.15rem;
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 999px;
+      color: var(--ink);
+      text-decoration: none;
+      font-weight: 900;
+      letter-spacing: .01em;
+      transition: transform .22s ease, box-shadow .22s ease, background .22s ease;
+    }
+
+    .btn.primary {
+      color: #06111f;
+      background: linear-gradient(135deg, var(--gold), var(--cyan));
+      box-shadow: 0 16px 44px rgba(34,211,238,.22);
+    }
+
+    .btn.secondary { background: rgba(255,255,255,.08); }
+
+    .btn:hover,
+    .btn:focus-visible {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 58px rgba(246,200,95,.22);
+      outline: none;
+    }
+
+    .hero-side {
+      padding: 1rem;
+      display: grid;
+      align-content: stretch;
+    }
+
+    .route-orbit {
+      min-height: 100%;
+      position: relative;
+      overflow: hidden;
+      border-radius: calc(var(--radius-lg) - 8px);
+      padding: 1.3rem;
+      background:
+        radial-gradient(circle at 30% 20%, rgba(246,200,95,.24), transparent 9rem),
+        radial-gradient(circle at 85% 82%, rgba(34,211,238,.2), transparent 10rem),
+        linear-gradient(160deg, rgba(255,255,255,.12), rgba(255,255,255,.04));
+      border: 1px solid rgba(255,255,255,.14);
+    }
+
+    .route-orbit::before {
+      content: "";
+      position: absolute;
+      inset: 9% 8%;
+      border: 1px dashed rgba(255,255,255,.28);
+      border-radius: 50%;
+      transform: rotate(-20deg);
+    }
+
+    .route-orbit::after {
+      content: "";
+      position: absolute;
+      inset: 18% 18%;
+      border: 1px solid rgba(246,200,95,.22);
+      border-radius: 50%;
+      transform: rotate(18deg);
+    }
+
+    .orbit-title {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      color: rgba(247,251,255,.86);
+      font-size: .86rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+    }
+
+    .orbit-title span:last-child { color: var(--gold-2); }
+
+    .orbital-list {
+      position: relative;
+      z-index: 2;
+      margin: 3.4rem 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: .86rem;
+    }
+
+    .orbital-list li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: .82rem .9rem;
+      border-radius: 18px;
+      background: rgba(5,16,28,.28);
+      border: 1px solid rgba(255,255,255,.14);
+    }
+
+    .orbital-list strong { font-family: "Outfit", sans-serif; }
+    .orbital-list span { color: var(--muted); font-size: .83rem; font-weight: 800; }
+
+    .motif-band {
+      margin-top: 1.2rem;
+      min-height: 58px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,.14);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.03)),
+        repeating-linear-gradient(45deg,
+          rgba(246,200,95,.95) 0 10px,
+          rgba(34,211,238,.75) 10px 20px,
+          rgba(255,122,144,.75) 20px 30px,
+          rgba(255,255,255,.2) 30px 32px);
+      opacity: .86;
+      mask-image: linear-gradient(90deg, transparent 0, black 8%, black 92%, transparent 100%);
+    }
+
+    .stats-band {
+      padding: 0 0 42px;
+    }
+
+    .stats-grid {
+      width: min(var(--max), calc(100% - 28px));
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .stat-card {
+      padding: 1.1rem;
+      border-radius: var(--radius-md);
+      text-align: center;
+    }
+
+    .stat-number {
+      display: block;
+      font-family: "Outfit", sans-serif;
+      font-size: clamp(2.1rem, 4.7vw, 4rem);
+      line-height: .9;
+      font-weight: 900;
+      color: var(--gold-2);
+      letter-spacing: -.04em;
+    }
+
+    .stat-label {
+      display: block;
+      margin-top: .6rem;
+      color: var(--muted);
+      font-size: .84rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      font-weight: 900;
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.78fr) minmax(280px, 0.52fr);
+      gap: 1.6rem;
+      align-items: end;
+      margin-bottom: 2rem;
+    }
+
+    .section-head h2 {
+      margin-top: .75rem;
+      font-size: clamp(2.2rem, 6vw, 5rem);
+    }
+
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.75;
+    }
+
+    .act {
+      margin-top: 2.4rem;
+    }
+
+    .act-divider {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin: 2rem 0 1.1rem;
+      color: var(--gold-2);
+      font-weight: 900;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      font-size: .8rem;
+    }
+
+    .act-divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(246,200,95,.5), rgba(34,211,238,.08));
+    }
+
+    .route-cards {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .stop-card {
+      position: relative;
+      overflow: hidden;
+      padding: 1.25rem;
+      border-radius: var(--radius-md);
+    }
+
+    .stop-card::before {
+      content: "";
+      position: absolute;
+      inset: auto -3rem -4rem auto;
+      width: 13rem;
+      height: 13rem;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(34,211,238,.14), transparent 62%);
+      pointer-events: none;
+    }
+
+    .stop-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .stop-number {
+      width: 46px;
+      height: 46px;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      border-radius: 16px;
+      color: #06111f;
+      font-family: "Outfit", sans-serif;
+      font-size: 1.15rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--gold), var(--cyan));
+      box-shadow: 0 12px 28px rgba(34,211,238,.18);
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: .45rem .7rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.18);
+      color: rgba(247,251,255,.86);
+      background: rgba(255,255,255,.08);
+      font-size: .75rem;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .stop-card h3 {
+      font-size: clamp(1.45rem, 2.6vw, 2.2rem);
+      line-height: 1.02;
+      letter-spacing: -.03em;
+    }
+
+    .stop-card h4 {
+      margin: .55rem 0 .9rem;
+      color: var(--gold-2);
+      font-size: 1rem;
+      letter-spacing: .01em;
+    }
+
+    .narrative {
+      margin: 0 0 1rem;
+      color: rgba(247,251,255,.82);
+      font-style: italic;
+      line-height: 1.6;
+    }
+
+    .highlights {
+      margin: 0;
+      padding-left: 1.1rem;
+      color: var(--muted);
+      line-height: 1.62;
+    }
+
+    .highlights li { margin: .42rem 0; }
+
+    .after-line {
+      margin: 1rem 0 0;
+      padding: .78rem .85rem;
+      border-radius: 18px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.14);
+      color: rgba(247,251,255,.88);
+      line-height: 1.5;
+      font-size: .92rem;
+    }
+
+    .after-line strong { color: var(--cyan-2); }
+
+    .source-note {
+      margin-top: 1.2rem;
+      color: rgba(247,251,255,.7);
+      font-size: .88rem;
+      line-height: 1.6;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .cards-grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .mini-card {
+      padding: 1.15rem;
+      border-radius: var(--radius-md);
+    }
+
+    .mini-card .icon {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 16px;
+      background: rgba(246,200,95,.14);
+      border: 1px solid rgba(246,200,95,.3);
+      color: var(--gold-2);
+      font-weight: 900;
+      margin-bottom: 1rem;
+    }
+
+    .mini-card h3 {
+      font-size: 1.35rem;
+      line-height: 1.08;
+      margin-bottom: .7rem;
+    }
+
+    .mini-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: .95rem;
+    }
+
+    .after-dark-section {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .after-dark-section::before {
+      content: "After Dark";
+      position: absolute;
+      left: 50%;
+      top: 2rem;
+      transform: translateX(-50%);
+      font-family: "Outfit", sans-serif;
+      font-size: clamp(4rem, 16vw, 14rem);
+      font-weight: 900;
+      letter-spacing: -.08em;
+      line-height: 1;
+      color: rgba(255,255,255,.035);
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    .plan-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .plan-item {
+      padding: 1.2rem;
+      border-radius: var(--radius-md);
+    }
+
+    .plan-item h3 {
+      display: flex;
+      align-items: center;
+      gap: .55rem;
+      font-size: 1.28rem;
+      margin-bottom: .7rem;
+    }
+
+    .plan-item h3 span {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 10px;
+      color: #06111f;
+      background: linear-gradient(135deg, var(--gold), var(--cyan));
+      font-family: "Manrope", sans-serif;
+      font-size: .8rem;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .plan-item p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: .95rem;
+    }
+
+    .cta-band {
+      padding: 0 0 72px;
+    }
+
+    .cta-inner {
+      width: min(var(--max), calc(100% - 28px));
+      margin: 0 auto;
+      padding: clamp(1.4rem, 4vw, 2.6rem);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 1.2rem;
+      align-items: center;
+      border-radius: var(--radius-lg);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-inner::after {
+      content: "";
+      position: absolute;
+      width: 26rem;
+      height: 26rem;
+      border-radius: 50%;
+      right: -10rem;
+      top: -11rem;
+      background: radial-gradient(circle, rgba(246,200,95,.24), transparent 65%);
+      pointer-events: none;
+    }
+
+    .cta-inner h2 {
+      position: relative;
+      z-index: 1;
+      font-size: clamp(2rem, 5vw, 4.5rem);
+    }
+
+    .cta-inner p {
+      position: relative;
+      z-index: 1;
+      margin: .7rem 0 0;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .cta-inner .btn { position: relative; z-index: 1; }
+
+    .download-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .9rem;
+      margin-top: 1rem;
+    }
+
+    .download-note {
+      margin: .95rem 0 0;
+      color: rgba(247,251,255,.68);
+      line-height: 1.55;
+      font-size: .9rem;
+    }
+
+    .map-wrap {
+      padding: 1rem;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow), 0 0 80px rgba(34,211,238,.18);
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+    }
+
+    /* Leaflet mobile hardening: keep the map shell fade-only and include the
+       critical positioning rules Leaflet needs if its CDN stylesheet loads late. */
+    .map-wrap.reveal,
+    .map-wrap.reveal.is-visible {
+      transform: none;
+    }
+
+    #routeMap {
+      width: 100%;
+      height: 680px;
+      height: clamp(560px, 76vh, 760px);
+      min-height: 560px;
+      border-radius: calc(var(--radius-lg) - 10px);
+      overflow: hidden;
+      background: #dce5e9;
+      border: 1px solid rgba(255,255,255,.18);
+      z-index: 1;
+      position: relative;
+      isolation: isolate;
+      touch-action: pan-x pan-y;
+    }
+
+    #routeMap.leaflet-container {
+      position: relative;
+      overflow: hidden;
+      font-family: "Manrope", system-ui, sans-serif;
+      font-size: 12px;
+      line-height: 1.5;
+      touch-action: pan-x pan-y;
+    }
+
+    #routeMap .leaflet-pane,
+    #routeMap .leaflet-tile,
+    #routeMap .leaflet-marker-icon,
+    #routeMap .leaflet-marker-shadow,
+    #routeMap .leaflet-tile-container,
+    #routeMap .leaflet-pane > svg,
+    #routeMap .leaflet-pane > canvas,
+    #routeMap .leaflet-zoom-box,
+    #routeMap .leaflet-image-layer,
+    #routeMap .leaflet-layer {
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+
+    #routeMap .leaflet-container img,
+    #routeMap .leaflet-tile,
+    #routeMap .leaflet-marker-icon,
+    #routeMap .leaflet-marker-shadow {
+      max-width: none !important;
+      max-height: none !important;
+      -webkit-user-drag: none;
+      user-select: none;
+    }
+
+    #routeMap .leaflet-map-pane { z-index: auto; }
+    #routeMap .leaflet-tile-pane { z-index: 200; }
+    #routeMap .leaflet-overlay-pane { z-index: 400; }
+    #routeMap .leaflet-shadow-pane { z-index: 500; }
+    #routeMap .leaflet-marker-pane { z-index: 600; }
+    #routeMap .leaflet-tooltip-pane { z-index: 650; }
+    #routeMap .leaflet-popup-pane { z-index: 700; }
+    #routeMap .leaflet-zoom-animated { transform-origin: 0 0; }
+    #routeMap .leaflet-interactive { cursor: pointer; }
+    #routeMap .leaflet-control { position: relative; z-index: 800; pointer-events: auto; }
+    #routeMap .leaflet-top,
+    #routeMap .leaflet-bottom { position: absolute; z-index: 1000; pointer-events: none; }
+    #routeMap .leaflet-top { top: 0; }
+    #routeMap .leaflet-right { right: 0; }
+    #routeMap .leaflet-bottom { bottom: 0; }
+    #routeMap .leaflet-left { left: 0; }
+    #routeMap .leaflet-left .leaflet-control { float: left; clear: both; margin-left: 10px; }
+    #routeMap .leaflet-right .leaflet-control { float: right; clear: both; margin-right: 10px; }
+    #routeMap .leaflet-top .leaflet-control { margin-top: 10px; }
+    #routeMap .leaflet-bottom .leaflet-control { margin-bottom: 10px; }
+    #routeMap .leaflet-control-zoom {
+      border: 1px solid rgba(16,32,51,.22);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,.18);
+    }
+    #routeMap .leaflet-control-zoom a {
+      display: block;
+      width: 32px;
+      height: 32px;
+      line-height: 31px;
+      text-align: center;
+      text-decoration: none;
+      background: rgba(255,255,255,.94);
+      color: #102033;
+      border-bottom: 1px solid rgba(16,32,51,.18);
+      font: 700 18px/32px Arial, sans-serif;
+    }
+    #routeMap .leaflet-control-zoom a:last-child { border-bottom: 0; }
+    #routeMap .leaflet-control-attribution {
+      margin: 0;
+      padding: 2px 6px;
+      background: rgba(255,255,255,.78);
+      color: #263645;
+      border-radius: 8px 0 0 0;
+    }
+    #routeMap .leaflet-popup { position: absolute; text-align: center; margin-bottom: 20px; }
+    #routeMap .leaflet-popup-content-wrapper { padding: 1px; text-align: left; border-radius: 14px; }
+    #routeMap .leaflet-popup-content { margin: 12px 14px; min-width: 170px; }
+    #routeMap .leaflet-popup-tip-container { width: 40px; height: 20px; position: absolute; left: 50%; margin-left: -20px; overflow: hidden; pointer-events: none; }
+    #routeMap .leaflet-popup-tip { width: 17px; height: 17px; padding: 1px; margin: -10px auto 0; transform: rotate(45deg); }
+
+    .map-caption {
+      margin: 1rem .35rem 0;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .map-caption a {
+      color: var(--cyan-2);
+      font-weight: 900;
+      text-decoration-thickness: .12em;
+      text-underline-offset: .18em;
+    }
+
+    .gold-pin span {
+      display: block;
+      width: 20px;
+      height: 20px;
+      border-radius: 999px 999px 999px 0;
+      transform: rotate(-45deg);
+      background: linear-gradient(135deg, #ffdf8a, #22d3ee);
+      border: 2px solid #ffffff;
+      box-shadow: 0 8px 24px rgba(0,0,0,.28), 0 0 24px rgba(34,211,238,.45);
+    }
+
+    .leaflet-popup-content-wrapper,
+    .leaflet-popup-tip {
+      background: rgba(5,16,28,.92);
+      color: #f7fbff;
+      border: 1px solid rgba(255,255,255,.16);
+      box-shadow: 0 12px 40px rgba(0,0,0,.34);
+    }
+
+    .leaflet-popup-content { line-height: 1.45; }
+    .leaflet-control-attribution { font-size: 10px; }
+
+    footer {
+      border-top: 1px solid rgba(255,255,255,.13);
+      background: rgba(5,16,28,.45);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .footer-inner {
+      width: min(var(--max), calc(100% - 28px));
+      margin: 0 auto;
+      padding: 2rem 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      color: var(--muted);
+      font-size: .92rem;
+      line-height: 1.6;
+    }
+
+    .footer-inner strong {
+      display: block;
+      color: var(--ink);
+      font-family: "Outfit", sans-serif;
+      font-size: 1.08rem;
+    }
+
+    .footer-inner a {
+      color: var(--cyan-2);
+      font-weight: 900;
+      text-decoration-thickness: .12em;
+      text-underline-offset: .18em;
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(18px);
+      transition: opacity .7s ease, transform .7s ease;
+    }
+
+    .reveal.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 980px) {
+      .hero-grid,
+      .section-head,
+      .cta-inner {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-side { min-height: 420px; }
+      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .route-cards { grid-template-columns: 1fr; }
+      .cards-grid, .cards-grid.three, .plan-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .cta-inner .btn { width: fit-content; }
+    }
+
+    @media (max-width: 720px) {
+      :root { --nav-h: 68px; }
+      .nav-inner {
+        width: min(100% - 20px, var(--max));
+        align-items: stretch;
+        padding: .55rem 0;
+        gap: .55rem;
+      }
+      .brand-copy span { display: none; }
+      .brand-mark { width: 38px; height: 38px; border-radius: 14px; }
+      .nav-links {
+        justify-content: flex-start;
+        flex: 1;
+      }
+      .nav-links a { padding: .58rem .72rem; font-size: .78rem; }
+      .section { width: min(100% - 20px, var(--max)); padding: 58px 0; }
+      .hero { padding-top: 22px; min-height: auto; }
+      .hero-panel { border-radius: 26px; }
+      .hero-side { min-height: auto; }
+      .route-orbit { min-height: 390px; }
+      .cards-grid, .cards-grid.three, .plan-grid, .stats-grid { grid-template-columns: 1fr; }
+      #routeMap {
+        height: 520px;
+        height: clamp(430px, 66dvh, 560px);
+        min-height: 430px;
+      }
+      .footer-inner { flex-direction: column; align-items: flex-start; }
+    }
+
+    @media (max-width: 460px) {
+      .brand-copy strong { font-size: .92rem; }
+      .nav-links a { padding-inline: .62rem; }
+      .route-line { gap: .5rem; }
+      .chip { font-size: .8rem; }
+      .stop-card, .mini-card, .plan-item { padding: 1rem; }
+      .download-row .btn { width: 100%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .001ms !important;
+      }
+      .reveal { opacity: 1; transform: none; }
+    }
+
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      .glass,
+      .topbar {
+        background: rgba(5,16,28,.9);
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <div class="progress" aria-hidden="true"><span id="progressBar"></span></div>
+
+  <header class="topbar" id="topbar">
+    <div class="nav-inner">
+      <a class="brand" href="#main" aria-label="Diaspora Echo home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 48 48" role="img" aria-label="Sankofa-inspired gold route mark">
+            <path d="M28 8c-8.5.6-15 7.2-15 15.2 0 7.6 6.1 13.5 13.7 13.5 6.9 0 12.5-5.3 12.5-12.1 0-5.8-4.6-10.3-10.4-10.3-4.7 0-8.4 3.5-8.4 7.8 0 3.9 3 6.8 6.8 6.8"/>
+            <path d="M28 8l-4.8 4.8M28 8l5.5 3.9M15.3 35.6l-5.4 4.8M19.2 37.8l-2.2 5.7"/>
+            <path d="M10.2 40.2c6.2-2.7 10.8-2.2 15.6 1.4"/>
+          </svg>
+        </span>
+        <span class="brand-copy">
+          <strong>Diaspora Echo</strong>
+          <span>Tracing Roots. Traveling Forward.</span>
+        </span>
+      </a>
+
+      <nav class="nav-links" aria-label="Primary navigation">
+        <a href="#route">The Route</a>
+        <a href="#beyond">Beyond</a>
+        <a href="#after-dark">After Dark</a>
+        <a href="#plan">Plan It</a>
+        <a href="#map">Map</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="section hero" aria-labelledby="hero-title">
+      <div class="hero-grid">
+        <div class="glass hero-panel reveal">
+          <div class="kicker">Diaspora Echo presents · Morocco · Cabo Verde · Spain</div>
+          <h1 id="hero-title" class="gradient-text">Sankofa Atlantic Circuit</h1>
+          <p class="hero-tagline">A luminous heritage journey across Moorish courts, Creole harbors and Andalusian archives — tracing African memory from desert crossroads to Atlantic song.</p>
+          <div class="route-line" aria-label="Trip summary">
+            <span class="chip">Marrakech → Essaouira → Praia</span>
+            <span class="chip">Cidade Velha → Tarrafal → Mindelo</span>
+            <span class="chip">Seville → Cádiz</span>
+            <span class="chip">September 14–28</span>
+          </div>
+          <div class="hero-actions">
+            <a class="btn primary" href="#route">Explore the Route</a>
+            <a class="btn secondary" href="mailto:anthony@thediasporaecho.com?subject=Sankofa%20Atlantic%20Circuit%20enquiry">Email Anthony Durham</a>
+          </div>
+        </div>
+
+        <aside class="glass hero-side reveal" aria-label="Route mood board">
+          <div class="route-orbit">
+            <div class="orbit-title"><span>Atlantic arc</span><span>15 days</span></div>
+            <ul class="orbital-list">
+              <li><strong>Morocco</strong><span>Gnawa · medinas</span></li>
+              <li><strong>Cabo Verde</strong><span>Creole memory · morna</span></li>
+              <li><strong>Spain</strong><span>archives · Black Andalusia</span></li>
+              <li><strong>After dark</strong><span>music, rooftops, tables</span></li>
+            </ul>
+            <div class="motif-band" aria-hidden="true"></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="stats-band" aria-label="Trip stats">
+      <div class="stats-grid">
+        <div class="glass stat-card reveal"><span class="stat-number" data-target="3">0</span><span class="stat-label">Countries</span></div>
+        <div class="glass stat-card reveal"><span class="stat-number" data-target="15">0</span><span class="stat-label">Days</span></div>
+        <div class="glass stat-card reveal"><span class="stat-number" data-target="8">0</span><span class="stat-label">Core Stops</span></div>
+        <div class="glass stat-card reveal"><span class="stat-number" data-target="7">0</span><span class="stat-label">UNESCO Touchpoints</span></div>
+      </div>
+    </section>
+
+    <section class="section" id="route" aria-labelledby="route-title">
+      <div class="section-head reveal">
+        <div>
+          <div class="eyebrow">The Route</div>
+          <h2 id="route-title" class="gradient-text">Three countries. One Atlantic memory line.</h2>
+        </div>
+        <p>The route honors Black and African-diaspora presence without flattening it: Gnawa practice in Morocco, the birth of Creole Atlantic society in Cabo Verde, and the often-hidden Black history held in Andalusian brotherhoods, ports and archives.</p>
+      </div>
+
+      <div class="act reveal">
+        <div class="act-divider">Act I · Morocco — desert memory, medina light</div>
+        <div class="route-cards">
+          <article class="glass stop-card">
+            <div class="stop-top"><span class="stop-number">01</span><span class="pill">Marrakech · Morocco</span></div>
+            <h3>Red City Prelude</h3>
+            <h4>Almohad lines, oral tradition, Gnawa resonance</h4>
+            <p class="narrative">A first chapter in ochre and gold, where North African urban heritage meets the living music-memory of communities with roots across the Sahara.</p>
+            <ul class="highlights">
+              <li>Medina of Marrakesh — <strong>UNESCO World Heritage</strong>.</li>
+              <li>Jemaa el-Fna cultural space — <strong>UNESCO Intangible Cultural Heritage</strong>.</li>
+              <li>Koutoubia Mosque exterior, Saadian Tombs and medina craft lanes.</li>
+            </ul>
+            <p class="after-line"><strong>After Dark:</strong> rooftop mint tea above the medina, then Jemaa el-Fna’s night-food theatre and musicians with a local guide.</p>
+          </article>
+
+          <article class="glass stop-card">
+            <div class="stop-top"><span class="stop-number">02</span><span class="pill">Essaouira · Morocco</span></div>
+            <h3>Mogador Wind & Gnaoua Pulse</h3>
+            <h4>Atlantic ramparts, trading-port memory, healing rhythm</h4>
+            <p class="narrative">On the Atlantic edge, Essaouira turns the route toward water: fortified walls, blue doors and Gnaoua music that carries West African ancestral echoes.</p>
+            <ul class="highlights">
+              <li>Medina of Essaouira, formerly Mogador — <strong>UNESCO World Heritage</strong>.</li>
+              <li>Skala de la Ville, old port ramparts and the working harbor.</li>
+              <li>Private Gnaoua listening session; Gnawa practice is <strong>UNESCO Intangible Cultural Heritage</strong>.</li>
+            </ul>
+            <p class="after-line"><strong>After Dark:</strong> seafood by the harbor, a riad-courtyard maalem performance, and a moonlit rampart walk.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="act reveal">
+        <div class="act-divider">Act II · Cabo Verde — Creole origins, resistance, sodade</div>
+        <div class="route-cards">
+          <article class="glass stop-card">
+            <div class="stop-top"><span class="stop-number">03</span><span class="pill">Praia · Santiago</span></div>
+            <h3>Plateau of Return</h3>
+            <h4>A living capital before the first UNESCO descent</h4>
+            <p class="narrative">Praia sets the island tone: Kriolu language, markets, independence memory and the everyday rhythms that make Santiago feel unmistakably African Atlantic.</p>
+            <ul class="highlights">
+              <li>Plateau historic district and Praça Alexandre Albuquerque.</li>
+              <li>Museu Etnográfico da Praia for material culture and island lifeways.</li>
+              <li>Sucupira Market for textiles, foodways and local commerce.</li>
+            </ul>
+            <p class="after-line"><strong>After Dark:</strong> live funaná or batuque when scheduled, dinner around Plateau or Quebra Canela, and a first toast with grogue or ponche.</p>
+          </article>
+
+          <article class="glass stop-card">
+            <div class="stop-top"><span class="stop-number">04</span><span class="pill">Cidade Velha · Santiago</span></div>
+            <h3>Ribeira Grande Witness</h3>
+            <h4>Where Atlantic rupture became Creole society</h4>
+            <p class="narrative">This is the solemn center of the journey: a former Atlantic slave-trade hub and one of the clearest places to face the violence and cultural formation of the early modern Atlantic.</p>
+            <ul class="highlights">
+              <li>Cidade Velha, Historic Centre of Ribeira Grande — <strong>UNESCO World Heritage</strong>.</li>
+              <li>Pelourinho pillory, Rua Banana and Nossa Senhora do Rosário Church.</li>
+              <li>Fortaleza Real de São Filipe and Sé Cathedral ruins.</li>
+            </ul>
+            <p class="after-line"><strong>After Dark:</strong> a sunset descent from the fortress to a seaside table, with space held for reflection before celebration.</p>
+          </article>
+
+          <article class="glass stop-card">
+            <div class="stop-top"><span class="stop-number">05</span><span class="pill">Tarrafal · Santiago</span></div>
+            <h3>Resistance on the North Shore</h3>
+            <h4>Colonial prison, liberation memory, quiet Atlantic water</h4>
+            <p class="narrative">Tarrafal shifts the lens from enslavement to anti-colonial resistance, honoring those imprisoned under Portuguese dictatorship and empire.</p>
+            <ul class="highlights">
+              <li>Museu da Resistência at the former Tarrafal Concentration Camp.</li>
+              <li>Chão Bom village context and the camp’s preserved structures.</li>
+              <li>Serra Malagueta viewpoints en route, then Tarrafal Bay.</li>
+            </ul>
+            <p class="after-line"><strong>After Dark:</strong> grilled fish by the bay, soft morna or coladeira if available, and a low-key night after a heavy history day.</p>
+          </article>
+
+          <article class="glass stop-card">
+            <div class="stop-top"><span class="stop-number">06</span><span class="pill">Mindelo · São Vicente</span></div>
+            <h3>Sodade City</h3>
+            <h4>Cesária Évora, morna, carnival streets</h4>
+            <p class="narrative">Mindelo turns memory into music, carrying the voice of migration, longing and return through Cesária Évora’s legacy and the city’s nightly live-music culture.</p>
+            <ul class="highlights">
+              <li>Núcleo Museológico Cesária Évora in Mindelo.</li>
+              <li>Morna, musical practice of Cabo Verde — <strong>UNESCO Intangible Cultural Heritage</strong>.</li>
+              <li>Rua Lisboa, Palácio do Povo and Torre de Belém maritime museum exterior.</li>
+            </ul>
+            <p class="after-line"><strong>After Dark:</strong> live morna, coladeira and funaná around Rua Lisboa, with a private table reserved near the music.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="act reveal">
+        <div class="act-divider">Act III · Spain — archives, brotherhoods, hidden Black Andalusia</div>
+        <div class="route-cards">
+          <article class="glass stop-card">
+            <div class="stop-top"><span class="stop-number">07</span><span class="pill">Seville · Spain</span></div>
+            <h3>Black Andalusia Revealed</h3>
+            <h4>Brotherhood, empire, archive and song</h4>
+            <p class="narrative">Seville is where the route asks what Europe kept visible, what it archived and what it buried: Black confraternity history beside imperial records and flamenco nights.</p>
+            <ul class="highlights">
+              <li>Hermandad de los Negritos / Iglesia de Nuestra Señora de los Ángeles.</li>
+              <li>Archivo General de Indias — within Seville’s <strong>UNESCO World Heritage</strong> ensemble.</li>
+              <li>Cathedral, Giralda and Alcázar exteriors for layered Moorish-Andalusian context.</li>
+            </ul>
+            <p class="after-line"><strong>After Dark:</strong> Triana flamenco, late tapas near Arenal, and a rooftop view toward the Giralda.</p>
+          </article>
+
+          <article class="glass stop-card">
+            <div class="stop-top"><span class="stop-number">08</span><span class="pill">Cádiz · Spain</span></div>
+            <h3>Atlantic Port Ledger</h3>
+            <h4>Harbor city, slave-trade routes, carnival edge</h4>
+            <p class="narrative">Cádiz closes the circuit at a port where Spain’s Atlantic commerce, slavery economies and seafaring culture left traces still being recovered by historians and local memory projects.</p>
+            <ul class="highlights">
+              <li>Cádiz old city, harborfront and Torre Tavira camera obscura viewpoint.</li>
+              <li>Callejón de los Negros memory stop and port-city Black history context.</li>
+              <li>Optional Jerez tabanco evening for sherry, palmas and flamenco culture.</li>
+            </ul>
+            <p class="after-line"><strong>After Dark:</strong> Barrio Santa María flamenco, seafood near La Viña, or a Jerez tabanco night if the group wants a final crescendo.</p>
+          </article>
+        </div>
+      </div>
+
+      <p class="source-note reveal"><strong>Planning note:</strong> heritage-site hours, guided-access rules, live-music schedules and domestic flight timings should be confirmed before booking.</p>
+    </section>
+
+    <section class="section" id="beyond" aria-labelledby="beyond-title">
+      <div class="section-head reveal">
+        <div>
+          <div class="eyebrow">Beyond</div>
+          <h2 id="beyond-title" class="gradient-text">Extensions for deeper roots.</h2>
+        </div>
+        <p>Add one to four days where the group wants more desert, more island, more music or more Black Iberian history.</p>
+      </div>
+
+      <div class="cards-grid reveal">
+        <article class="glass mini-card">
+          <div class="icon">01</div>
+          <h3>Aït Ben Haddou & Ouarzazate</h3>
+          <p>Extend south from Marrakech to the UNESCO ksar of Aït Ben Haddou, a fortified stop tied to routes linking ancient Sudan and Marrakech.</p>
+        </article>
+        <article class="glass mini-card">
+          <div class="icon">02</div>
+          <h3>Fogo Island</h3>
+          <p>Add volcano landscapes, Chã das Caldeiras, coffee, wine and village hospitality for a grounded Cabo Verde add-on.</p>
+        </article>
+        <article class="glass mini-card">
+          <div class="icon">03</div>
+          <h3>Santo Antão</h3>
+          <p>Ferry from Mindelo for dramatic green valleys, diaspora family stories and a slower hiking chapter after music-heavy nights.</p>
+        </article>
+        <article class="glass mini-card">
+          <div class="icon">04</div>
+          <h3>Granada & Córdoba</h3>
+          <p>Follow Afro-Spanish humanist Juan Latino in Granada and pair it with Córdoba’s UNESCO historic center and Mosque-Cathedral.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section after-dark-section" id="after-dark" aria-labelledby="after-title">
+      <div class="section-head reveal">
+        <div>
+          <div class="eyebrow">After Sunset</div>
+          <h2 id="after-title" class="gradient-text">The culture keeps speaking after dark.</h2>
+        </div>
+        <p>This trip should feel reverent by day and alive by night: music-led, table-led, locally guided and paced so the group can celebrate without rushing the memory work.</p>
+      </div>
+
+      <div class="cards-grid three reveal">
+        <article class="glass mini-card">
+          <div class="icon">♫</div>
+          <h3>Gnaoua & Atlantic Fusion</h3>
+          <p>Essaouira is built for a private maalem session, a curated listening salon or a June festival add-on if dates shift.</p>
+        </article>
+        <article class="glass mini-card">
+          <div class="icon">♪</div>
+          <h3>Morna, Funaná, Batuque</h3>
+          <p>Praia and Mindelo give the group a live soundtrack: saudade, migration, drums, dance and Cape Verdean welcome.</p>
+        </article>
+        <article class="glass mini-card">
+          <div class="icon">✺</div>
+          <h3>Flamenco & Palmas</h3>
+          <p>Seville, Cádiz and optional Jerez carry late-night tables where voice, claps and guitar turn history into pulse.</p>
+        </article>
+        <article class="glass mini-card">
+          <div class="icon">☾</div>
+          <h3>Rooftops & Sundowners</h3>
+          <p>Medina rooftops, Cidade Velha fortress sunset, Mindelo harbor evenings and Giralda views keep every city cinematic.</p>
+        </article>
+        <article class="glass mini-card">
+          <div class="icon">∞</div>
+          <h3>Food as Memory</h3>
+          <p>Tagine, seafood, cachupa, grogue, tapas and sherry become hosted tables with context, not just reservations.</p>
+        </article>
+        <article class="glass mini-card">
+          <div class="icon">◆</div>
+          <h3>Festival Energy</h3>
+          <p>Mindelo Carnival, Cádiz Carnival, Kriol Jazz and Gnaoua Festival are date-specific add-ons for future editions.</p>
+        </article>
+        <article class="glass mini-card">
+          <div class="icon">DE</div>
+          <h3>Built for the Group</h3>
+          <p>Private guides, buyouts, a photographer, welcome gifts, occasion dinners and reflection moments can be arranged around Anthony’s hosting style.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="plan" aria-labelledby="plan-title">
+      <div class="section-head reveal">
+        <div>
+          <div class="eyebrow">Plan It</div>
+          <h2 id="plan-title" class="gradient-text">Practical, paced and polished.</h2>
+        </div>
+        <p>The journey is designed for travelers who want heritage depth without giving up beauty, music, food or rest.</p>
+      </div>
+
+      <div class="plan-grid reveal">
+        <article class="glass plan-item">
+          <h3><span>1</span>Getting around</h3>
+          <p>Use private transfers in Morocco, road transfers across Santiago, a domestic flight or ferry/flight logic for São Vicente, and trains or private coach between Seville, Cádiz and Jerez.</p>
+        </article>
+        <article class="glass plan-item">
+          <h3><span>2</span>When to go</h3>
+          <p>September is strong for Morocco and Andalusia’s shoulder-season feel; Cabo Verde is warm and can be rainier, so build weather buffers and flexible island logistics.</p>
+        </article>
+        <article class="glass plan-item">
+          <h3><span>3</span>Who it’s for</h3>
+          <p>Ideal for diaspora travelers, cultural clubs, milestone birthdays, creatives, educators and private groups who want roots, joy and conversation.</p>
+        </article>
+        <article class="glass plan-item">
+          <h3><span>4</span>The table & stays</h3>
+          <p>Pair riads, Atlantic boutique hotels, Cape Verdean city stays and Andalusian courtyard properties with hosted meals that explain the plate and the place.</p>
+        </article>
+        <article class="glass plan-item">
+          <h3><span>5</span>Health & visas</h3>
+          <p>For U.S. passport planning, verify Morocco, Cabo Verde and Spain/Schengen entry rules before deposit; Cabo Verde may require pre-registration and an airport security fee. Consult a travel-health clinician for vaccines and mosquito precautions.</p>
+        </article>
+        <article class="glass plan-item">
+          <h3><span>6</span>Pace & length</h3>
+          <p>The 15-day core works best with two-night anchors in Marrakech, Essaouira, Mindelo and Seville; extend to 18–21 days for Fogo, Santo Antão or Granada/Córdoba.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="cta-band" aria-label="Contact Anthony Durham">
+      <div class="glass cta-inner reveal">
+        <div>
+          <h2 class="gradient-text">Tracing Roots. Traveling Forward.</h2>
+          <p>For hosting, curation and booking flow, contact Anthony Durham at Diaspora Echo.</p>
+        </div>
+        <a class="btn primary" href="mailto:anthony@thediasporaecho.com?subject=Sankofa%20Atlantic%20Circuit">anthony@thediasporaecho.com</a>
+      </div>
+    </section>
+
+    <section class="section" id="downloads" aria-labelledby="downloads-title">
+      <div class="section-head reveal">
+        <div>
+          <div class="eyebrow">Downloads</div>
+          <h2 id="downloads-title" class="gradient-text">Printable trip assets.</h2>
+        </div>
+        <p>Use these buttons once the matching PDFs are uploaded beside this page.</p>
+      </div>
+      <div class="glass mini-card reveal">
+        <h3>Client-ready files</h3>
+        <p>Download links are relative, so they will work on GitHub Pages when the PDFs sit in the same folder as the HTML file.</p>
+        <div class="download-row">
+          <a class="btn primary" href="sankofa-atlantic-circuit-Brochure.pdf" download>Download Brochure PDF</a>
+          <a class="btn secondary" href="sankofa-atlantic-circuit-After-Dark-Guide.pdf" download>Download After-Dark Guide</a>
+        </div>
+        <p class="download-note">Upload <strong>sankofa-atlantic-circuit-Brochure.pdf</strong> and <strong>sankofa-atlantic-circuit-After-Dark-Guide.pdf</strong> into the same folder as index.html.</p>
+      </div>
+    </section>
+
+    <section class="section" id="map" aria-labelledby="map-title">
+      <div class="section-head reveal">
+        <div>
+          <div class="eyebrow">Route Map</div>
+          <h2 id="map-title" class="gradient-text">Follow the Atlantic arc.</h2>
+        </div>
+        <p>Markers show the route’s core heritage stops, with a connected line that moves from Morocco to Cabo Verde and onward to Andalusia.</p>
+      </div>
+
+      <div class="glass map-wrap reveal">
+        <div id="routeMap" role="img" aria-label="Interactive route map for Sankofa Atlantic Circuit"></div>
+        <p class="map-caption">Approximate stop locations are plotted for route storytelling and planning. For enquiries, custom pacing or private-host logistics, email <a href="mailto:anthony@thediasporaecho.com?subject=Sankofa%20Atlantic%20Circuit%20map%20enquiry">anthony@thediasporaecho.com</a>.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div>
+        <strong>Diaspora Echo</strong>
+        <span>Tracing Roots. Traveling Forward.</span>
+      </div>
+      <div>
+        Hosted by Anthony Durham · <a href="mailto:anthony@thediasporaecho.com">anthony@thediasporaecho.com</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script>
+    (() => {
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const topbar = document.getElementById('topbar');
+      const progressBar = document.getElementById('progressBar');
+      const revealEls = Array.from(document.querySelectorAll('.reveal'));
+      const statEls = Array.from(document.querySelectorAll('.stat-number'));
+      let statsStarted = false;
+
+      function updateChrome() {
+        const scrollTop = window.scrollY || document.documentElement.scrollTop;
+        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+        progressBar.style.width = progress + '%';
+        topbar.classList.toggle('is-solid', scrollTop > 18);
+      }
+
+      window.addEventListener('scroll', updateChrome, { passive: true });
+      updateChrome();
+
+      document.querySelectorAll('a[href^="#"]').forEach((link) => {
+        link.addEventListener('click', (event) => {
+          const target = document.querySelector(link.getAttribute('href'));
+          if (!target) return;
+          event.preventDefault();
+          target.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
+        });
+      });
+
+      function revealAll() {
+        revealEls.forEach((el) => el.classList.add('is-visible'));
+      }
+
+      if (reducedMotion || !('IntersectionObserver' in window)) {
+        revealAll();
+      } else {
+        const revealObserver = new IntersectionObserver((entries, observer) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          });
+        }, { threshold: 0.16, rootMargin: '0px 0px -8% 0px' });
+        revealEls.forEach((el) => revealObserver.observe(el));
+      }
+
+      function setFinalStats() {
+        statEls.forEach((el) => { el.textContent = el.dataset.target; });
+      }
+
+      function animateStats() {
+        if (statsStarted) return;
+        statsStarted = true;
+        if (reducedMotion) {
+          setFinalStats();
+          return;
+        }
+        const duration = 1250;
+        const start = performance.now();
+        const targets = statEls.map((el) => Number(el.dataset.target || 0));
+        function frame(now) {
+          const pct = Math.min((now - start) / duration, 1);
+          const eased = 1 - Math.pow(1 - pct, 3);
+          statEls.forEach((el, index) => {
+            el.textContent = Math.round(targets[index] * eased).toString();
+          });
+          if (pct < 1) requestAnimationFrame(frame);
+          else setFinalStats();
+        }
+        requestAnimationFrame(frame);
+      }
+
+      const statsBand = document.querySelector('.stats-band');
+      if (statsBand && 'IntersectionObserver' in window && !reducedMotion) {
+        const statObserver = new IntersectionObserver((entries, observer) => {
+          if (entries.some((entry) => entry.isIntersecting)) {
+            animateStats();
+            observer.disconnect();
+          }
+        }, { threshold: 0.25 });
+        statObserver.observe(statsBand);
+      } else {
+        animateStats();
+      }
+
+      const stops = [
+        { name: 'Marrakech, Morocco', coords: [31.6295, -7.9811], line: 'Medina, Jemaa el-Fna and the route’s Moroccan prelude.' },
+        { name: 'Essaouira, Morocco', coords: [31.5085, -9.7595], line: 'UNESCO Mogador, Atlantic ramparts and Gnaoua resonance.' },
+        { name: 'Praia, Santiago', coords: [14.9330, -23.5133], line: 'Cape Verdean capital, markets and Kriolu culture.' },
+        { name: 'Cidade Velha, Santiago', coords: [14.9167, -23.6167], line: 'UNESCO Ribeira Grande and the Atlantic slave-trade witness.' },
+        { name: 'Tarrafal, Santiago', coords: [15.2780, -23.7535], line: 'Resistance Museum, colonial prison memory and north-shore rest.' },
+        { name: 'Mindelo, São Vicente', coords: [16.8863, -24.9880], line: 'Cesária Évora, morna and Cape Verde’s live-music capital.' },
+        { name: 'Seville, Spain', coords: [37.3891, -5.9845], line: 'Los Negritos, Archivo de Indias and Black Andalusian history.' },
+        { name: 'Cádiz, Spain', coords: [36.5271, -6.2886], line: 'Atlantic port memory, old city and flamenco closeout.' }
+      ];
+
+      const mapEl = document.getElementById('routeMap');
+      let routeMap;
+
+      function fitRouteMap(routeLine) {
+        if (!routeMap || !routeLine) return;
+        const compact = window.matchMedia('(max-width: 720px)').matches;
+        routeMap.invalidateSize({ pan: false });
+        routeMap.fitBounds(routeLine.getBounds().pad(0.08), {
+          paddingTopLeft: compact ? [22, 22] : [46, 46],
+          paddingBottomRight: compact ? [22, 22] : [46, 46],
+          maxZoom: compact ? 4.25 : 5
+        });
+      }
+
+      function initRouteMap() {
+        if (!mapEl || !window.L || routeMap) return;
+
+        routeMap = L.map(mapEl, {
+          scrollWheelZoom: false,
+          zoomControl: true,
+          worldCopyJump: false,
+          preferCanvas: true,
+          zoomSnap: 0.25,
+          zoomDelta: 0.5
+        });
+
+        const routeTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+          maxZoom: 19,
+          noWrap: true,
+          detectRetina: true,
+          updateWhenIdle: true,
+          keepBuffer: 3,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        }).addTo(routeMap);
+
+        const pinIcon = L.divIcon({
+          className: 'gold-pin',
+          html: '<span></span>',
+          iconSize: [24, 24],
+          iconAnchor: [12, 18],
+          popupAnchor: [0, -18]
+        });
+
+        stops.forEach((stop, index) => {
+          L.marker(stop.coords, { icon: pinIcon })
+            .addTo(routeMap)
+            .bindPopup('<strong>' + (index + 1) + '. ' + stop.name + '</strong><br>' + stop.line);
+        });
+
+        const routeLine = L.polyline(stops.map((stop) => stop.coords), {
+          color: '#22d3ee',
+          weight: 3.5,
+          opacity: 0.92,
+          lineJoin: 'round'
+        }).addTo(routeMap);
+
+        routeTiles.on('load', () => fitRouteMap(routeLine));
+        fitRouteMap(routeLine);
+        requestAnimationFrame(() => fitRouteMap(routeLine));
+        setTimeout(() => fitRouteMap(routeLine), 160);
+        setTimeout(() => fitRouteMap(routeLine), 620);
+        setTimeout(() => fitRouteMap(routeLine), 1200);
+
+        if ('ResizeObserver' in window) {
+          const mapResize = new ResizeObserver(() => fitRouteMap(routeLine));
+          mapResize.observe(mapEl);
+        }
+
+        let routeResizeTimer;
+        window.addEventListener('resize', () => {
+          window.clearTimeout(routeResizeTimer);
+          routeResizeTimer = window.setTimeout(() => fitRouteMap(routeLine), 160);
+        }, { passive: true });
+        window.addEventListener('orientationchange', () => setTimeout(() => fitRouteMap(routeLine), 420), { passive: true });
+      }
+
+      if (mapEl && window.L) {
+        if ('IntersectionObserver' in window) {
+          const mapObserver = new IntersectionObserver((entries, observer) => {
+            if (!entries.some((entry) => entry.isIntersecting)) return;
+            initRouteMap();
+            observer.disconnect();
+          }, { threshold: 0.01, rootMargin: '420px 0px 420px 0px' });
+          mapObserver.observe(mapEl);
+        } else {
+          window.addEventListener('load', initRouteMap, { once: true });
+          setTimeout(initRouteMap, 500);
+        }
+      }
+    })();
+  </script>
+</body>
+</html>
